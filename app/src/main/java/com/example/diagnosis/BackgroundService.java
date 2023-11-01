@@ -1,7 +1,5 @@
 package com.example.diagnosis;
 
-import static android.content.Intent.getIntent;
-
 import android.app.ActivityManager;
 import android.app.Service;
 import android.content.Context;
@@ -114,12 +112,7 @@ public class BackgroundService extends Service {
     }
 
     private boolean checkLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
     public void sendStatus(){
