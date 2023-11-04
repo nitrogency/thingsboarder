@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.StatFs;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
@@ -158,6 +159,7 @@ public class BackgroundService extends Service {
                     message.put("host", Build.HOST);
                     message.put("version", Build.VERSION.RELEASE);
                     message.put("api", Build.VERSION.SDK_INT);
+                    message.put("timeSinceBoot", SystemClock.elapsedRealtime() / 60000);
 
                     message.put("RAM", ramPercent);
                     message.put("storage", storagePercent);
