@@ -19,7 +19,9 @@ import androidx.core.app.ActivityCompat;
 
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -27,7 +29,6 @@ public class BackgroundService extends Service {
 
     private Handler handler;
     private Runnable periodicTask;
-
     private String urlAddress;
     private float batteryCap;
     private String batteryStatus;
@@ -35,11 +36,14 @@ public class BackgroundService extends Service {
     private double latitude;
     private double ramPercent;
     private double storagePercent;
+    private String ipAddr;
+    private String pubAddress;
 
     @Override
     public void onCreate() {
         Log.i("BackgroundService", "Service launched");
         urlAddress = getResources().getString(R.string.url_address);
+        pubAddress = getResources().getString(R.string.public_address);
 
         handler = new Handler();
         periodicTask = new Runnable() {
@@ -49,7 +53,6 @@ public class BackgroundService extends Service {
                 handler.postDelayed(this, 60000);
             }
         };
-
         handler.post(periodicTask);
     }
 
@@ -58,6 +61,7 @@ public class BackgroundService extends Service {
         getLocation();
         getMemory();
         getStorage();
+        getNetwork();
     }
 
     public void getBatteryInfo() {
@@ -72,7 +76,7 @@ public class BackgroundService extends Service {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("BackgroundService | getBatteryInfo: ", e.toString());
         }
     }
 
@@ -85,11 +89,11 @@ public class BackgroundService extends Service {
                 latitude = location.getLatitude();
             }
             else {
-                Log.e("LOCATION", "Location permission not given. Skipping location");
+                Log.e("BackgroundService | getLocation:", "Location permission not given. Skipping.");
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            Log.e("BackgroundService | getLocation: ", e.toString());
         }
     }
 
@@ -102,13 +106,23 @@ public class BackgroundService extends Service {
     }
 
     public void getStorage() {
-        StatFs statFs = new StatFs(Environment.getRootDirectory().getAbsolutePath());
-        long blockSize = statFs.getBlockSizeLong();
-        long totalSize = statFs.getBlockCountLong()*blockSize;
-        long availableSize = statFs.getAvailableBlocksLong()*blockSize;
-        long usedSize = totalSize - availableSize;
+        StatFs statFs = new StatFs(Environment.getDataDirectory().getPath());
 
-        storagePercent = ((double) usedSize / totalSize) * 100.0;
+        long totalBytes = statFs.getTotalBytes();
+        long freeBytes = statFs.getFreeBytes();
+        long usedBytes = totalBytes - freeBytes;
+
+        storagePercent = ((float) usedBytes / totalBytes) * 100;
+    }
+
+    public void getNetwork() {
+        try {
+            URL url = new URL(pubAddress);
+            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+            ipAddr = in.readLine();
+        } catch (Exception e) {
+            Log.e("BackgroundService | getNetwork: ", e.toString());
+        }
     }
 
     private boolean checkLocationPermission() {
@@ -147,6 +161,9 @@ public class BackgroundService extends Service {
 
                     message.put("RAM", ramPercent);
                     message.put("storage", storagePercent);
+
+                    message.put("ipAddr", ipAddr);
+
                     message.put("request", conn.getRequestMethod());
 
                     Log.i("JSON", message.toString());
@@ -164,7 +181,7 @@ public class BackgroundService extends Service {
                     conn.disconnect();
                 }
                 catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("BackgroundService | sendStatus: ", e.toString());
                 }
             }
         });
@@ -180,6 +197,6 @@ public class BackgroundService extends Service {
     public void onDestroy() {
         super.onDestroy();
         handler.removeCallbacks(periodicTask);
-        Log.i("BackgroundService", "Service stopped");
+        Log.i("BackgroundService | onDestroy: ", "Service stopped");
     }
 }
